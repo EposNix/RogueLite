@@ -3,9 +3,8 @@ from enum import Enum
 from combat import Combat
 from card import Card, CardType
 from deck import Deck
-from enemy import Enemy
+from enemies import create_enemy
 from map_system import MapSystem, NodeType
-import random
 
 class GameState(Enum):
     MENU = 1
@@ -141,33 +140,8 @@ class Game:
     
     def _start_combat(self, elite=False, boss=False):
         """Start a combat encounter"""
-        # Create appropriate enemy based on type
-        if boss:
-            enemy_hp = 80
-            enemy_name = "Act Boss"
-        elif elite:
-            enemy_hp = 45
-            enemy_name = "Elite Enemy"
-        else:
-            enemy_hp = 25
-            enemy_name = "Basic Enemy"
-        
-        # Use existing enemy creation logic
-        enemy_cards = []
-        enemy_data = [
-            ("Quick Maul", CardType.ATTACK, 5, 2, 1, "Deal 2", "", ""),
-            ("Heavy Chomp", CardType.ATTACK, 2, 4, 3, "Deal 4", "", ""),
-            ("Guard", CardType.GUARD, 1, 0, 4, "Prevent 3", "", ""),
-            ("Howl", CardType.PREP, 3, 0, 2, "Charge", "", "")
-        ]
-        
-        for name, card_type, speed, damage, stability, effect, read, clash in enemy_data:
-            for _ in range(3):
-                enemy_cards.append(Card(name, card_type, speed, damage, stability, effect, read, clash))
-        
-        enemy_deck = Deck(enemy_cards)
-        enemy = Enemy(enemy_name, enemy_hp, enemy_deck, "Bruiser")
-        
+        act = self.map_system.current_act
+        enemy = create_enemy(act, elite, boss)
         self.combat = Combat(self.player_deck, enemy)
         self.state = GameState.COMBAT
     
