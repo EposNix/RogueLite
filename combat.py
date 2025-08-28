@@ -1,4 +1,5 @@
 import pygame
+import re
 from enum import Enum
 from card import CardType
 
@@ -172,8 +173,14 @@ class Combat:
         # Apply card effects
         damage = card.get_effective_damage()
         if damage > 0:
-            actual_damage = self.enemy.take_damage(damage)
-            self.resolution_log.append(f"Player deals {actual_damage} damage")
+            ignore_guard = "ignore guard" in card.effect.lower()
+            if ignore_guard:
+                self.enemy.hp = max(0, self.enemy.hp - damage)
+                actual_damage = damage
+                self.resolution_log.append(f"Player deals {actual_damage} damage (ignores guard)")
+            else:
+                actual_damage = self.enemy.take_damage(damage)
+                self.resolution_log.append(f"Player deals {actual_damage} damage")
             
             # Check if damage stuns enemy
             if actual_damage >= self.enemy_chosen_card.get_effective_stability():
@@ -190,19 +197,22 @@ class Combat:
         # Apply card effects
         damage = card.get_effective_damage()
         if damage > 0:
-            # Check guard
-            if self.player_guard > 0:
+            ignore_guard = "ignore guard" in card.effect.lower()
+            if not ignore_guard and self.player_guard > 0:
                 blocked = min(self.player_guard, damage)
                 damage -= blocked
                 self.player_guard -= blocked
                 if blocked > 0:
                     self.resolution_log.append(f"Blocked {blocked} damage")
-            
+
             if damage > 0:
                 self.player_hp -= damage
                 self.player_hp = max(0, self.player_hp)
-                self.resolution_log.append(f"Enemy deals {damage} damage")
-                
+                if ignore_guard:
+                    self.resolution_log.append(f"Enemy deals {damage} damage (ignores guard)")
+                else:
+                    self.resolution_log.append(f"Enemy deals {damage} damage")
+
                 # Check if damage stuns player
                 if damage >= self.player_selected_card.get_effective_stability():
                     self.resolution_log.append("Player stunned!")
@@ -212,40 +222,48 @@ class Combat:
     
     def _apply_card_special_effects(self, card, is_player):
         """Apply special card effects beyond basic damage"""
-        if card.type == CardType.GUARD:
-            guard_amount = 4 if "Guard Wall" in card.name else 3
+        effect_text = card.effect.lower()
+
+        # Guard or Prevent
+        guard_match = re.search(r'prevent\s+(\d+)', effect_text)
+        if card.type == CardType.GUARD or guard_match:
+            guard_amount = int(guard_match.group(1)) if guard_match else 0
             if is_player:
                 self.player_guard += guard_amount
                 self.resolution_log.append(f"Player gains {guard_amount} guard")
             else:
                 self.enemy.add_guard(guard_amount)
                 self.resolution_log.append(f"Enemy gains {guard_amount} guard")
-        
-        elif card.type == CardType.GRAPPLE:
-            # Grapple stuns even if damage < stability
+
+        # Grapple always stuns
+        if card.type == CardType.GRAPPLE:
             if is_player:
                 self.enemy.stunned = True
                 self.resolution_log.append("Grapple: Enemy stunned")
             else:
                 self.resolution_log.append("Grapple: Player stunned")
-        
-        elif card.type == CardType.PREP:
-            if "Focus" in card.name:
-                if is_player:
-                    self.player_hp = min(self.player_max_hp, self.player_hp + 2)
-                    self.resolution_log.append("Player heals 2 HP")
-                else:
-                    self.enemy.heal(2)
-                    self.resolution_log.append("Enemy heals 2 HP")
-        
-        elif "Ignite" in card.name:
+
+        # Simple healing prep cards
+        if card.type == CardType.PREP and "heal" in effect_text:
             if is_player:
-                self.enemy.add_status_effect("bleed", 1, 2)
-                self.resolution_log.append("Enemy gains Bleed 1")
+                self.player_hp = min(self.player_max_hp, self.player_hp + 2)
+                self.resolution_log.append("Player heals 2 HP")
             else:
-                self.player_status_effects["bleed"] = 1
-                self.player_status_effects["bleed_duration"] = 2
-                self.resolution_log.append("Player gains Bleed 1")
+                self.enemy.heal(2)
+                self.resolution_log.append("Enemy heals 2 HP")
+
+        # Bleed effects
+        bleed_match = re.search(r'bleed\s+(\d+)(?:\s*\((\d+) beats?\))?', effect_text)
+        if bleed_match:
+            bleed_amount = int(bleed_match.group(1))
+            bleed_duration = int(bleed_match.group(2)) if bleed_match.group(2) else 2
+            if is_player:
+                self.enemy.add_status_effect("bleed", bleed_amount, bleed_duration)
+                self.resolution_log.append(f"Enemy gains Bleed {bleed_amount}")
+            else:
+                self.player_status_effects["bleed"] = bleed_amount
+                self.player_status_effects["bleed_duration"] = bleed_duration
+                self.resolution_log.append(f"Player gains Bleed {bleed_amount}")
     
     def _resolve_clash(self):
         """Handle speed tie with clash rules"""
