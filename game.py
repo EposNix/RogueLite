@@ -57,7 +57,10 @@ class Game:
             ("Disrupt", CardType.TRICK, 5, 1, 1, "Foe Slow 2 this beat; deal 1", "", ""),
             ("Focus", CardType.PREP, 2, 0, 3, "Heal 2; next beat +1 Stability", "Effect: heal", ""),
             ("Ignite", CardType.SKILL, 3, 1, 2, "Deal 1; Bleed 1 (2 beats)", "Read: +Bleed 1", ""),
-            ("Feint", CardType.TRICK, 6, 1, 1, "After reveal, swap with unplayed; resolves S5", "Read: +1 dmg", "")
+            ("Feint", CardType.TRICK, 6, 1, 1, "After reveal, swap with unplayed; resolves S5", "Read: +1 dmg", ""),
+            ("Piercing Strike", CardType.ATTACK, 3, 3, 2, "Deal 3; Ignore guard", "", ""),
+            ("Deep Cut", CardType.ATTACK, 4, 1, 2, "Deal 1; Bleed 2 (3 beats)", "Read: +1 dmg", ""),
+            ("Reinforce", CardType.GUARD, 2, 0, 4, "Prevent 6", "", "")
         ]
         
         for name, card_type, speed, damage, stability, effect, read, clash in starter_cards:
