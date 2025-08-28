@@ -34,9 +34,9 @@ class Combat:
         self.beat_number = 1
         
         # UI state
-        self.card_width = 150
-        self.card_height = 100
-        self.card_spacing = 10
+        self.card_width = 200
+        self.card_height = 280
+        self.card_spacing = 20
         
         # Start first beat
         self._start_new_beat()
@@ -384,18 +384,18 @@ class Combat:
         
         # Draw player area (bottom)
         player_y = screen_height - self.card_height - 100
-        
-        # Player info
+
+        # Player info positioned above cards
         player_text = big_font.render(f"Player - HP: {self.player_hp}/{self.player_max_hp}", True, WHITE)
-        screen.blit(player_text, (20, screen_height - 180))
-        
+        screen.blit(player_text, (20, player_y - 80))
+
         if self.player_focus > 0:
             focus_text = font.render(f"Focus: {self.player_focus}", True, BLUE)
-            screen.blit(focus_text, (20, screen_height - 160))
-        
+            screen.blit(focus_text, (20, player_y - 60))
+
         if self.player_guard > 0:
             guard_text = font.render(f"Guard: {self.player_guard}", True, GREEN)
-            screen.blit(guard_text, (120, screen_height - 160))
+            screen.blit(guard_text, (120, player_y - 60))
         
         # Player cards
         player_hand = self.player_deck.hand
