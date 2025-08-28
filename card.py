@@ -90,46 +90,57 @@ class Card:
     
     def draw(self, surface, x, y, width, height, font, selected=False, highlighted=False):
         """Draw the card on the surface"""
-        # Card background
-        color = self.get_type_color()
-        if selected:
-            color = tuple(min(255, c + 50) for c in color)
-        elif highlighted:
-            color = tuple(min(255, c + 25) for c in color)
-        
+        # Basic background with type tint
+        bg = pygame.Surface((width, height), pygame.SRCALPHA)
+        bg.fill((245, 245, 245))
+        tint = pygame.Surface((width, height), pygame.SRCALPHA)
+        tint.fill(self.get_type_color() + (60,))
+        bg.blit(tint, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
         self.rect = pygame.Rect(x, y, width, height)
-        pygame.draw.rect(surface, color, self.rect)
-        pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)
-        
-        # Card name
-        name_text = font.render(self.name, True, (0, 0, 0))
-        text_rect = name_text.get_rect(centerx=x + width//2, top=y + 5)
+        surface.blit(bg, self.rect)
+
+        # Border to show selection/highlight
+        border_color = (255, 255, 255)
+        if selected:
+            border_color = (255, 215, 0)  # Gold when selected
+        elif highlighted:
+            border_color = (255, 255, 0)  # Yellow when predicting
+        pygame.draw.rect(surface, border_color, self.rect, 4)
+
+        # Use a larger font for the card name
+        name_font = pygame.font.Font(None, font.get_height() + 8)
+        name_text = name_font.render(self.name, True, (0, 0, 0))
+        text_rect = name_text.get_rect(centerx=x + width//2, top=y + 15)
         surface.blit(name_text, text_rect)
-        
+
+        # Body font for stats and effects
+        body_font = font
+
         # Speed indicator
-        speed_text = font.render(f"S{self.get_effective_speed()}", True, (0, 0, 0))
-        surface.blit(speed_text, (x + 5, y + 5))
-        
+        speed_text = body_font.render(f"S{self.get_effective_speed()}", True, (0, 0, 0))
+        surface.blit(speed_text, (x + 10, y + 15))
+
         # Damage (if any)
         if self.get_effective_damage() > 0:
-            dmg_text = font.render(f"{self.get_effective_damage()}", True, (0, 0, 0))
-            surface.blit(dmg_text, (x + width - 25, y + 5))
-        
+            dmg_text = body_font.render(f"{self.get_effective_damage()}", True, (0, 0, 0))
+            surface.blit(dmg_text, (x + width - dmg_text.get_width() - 10, y + 15))
+
         # Stability
-        stab_text = font.render(f"Stab{self.get_effective_stability()}", True, (0, 0, 0))
-        surface.blit(stab_text, (x + 5, y + height - 20))
-        
+        stab_text = body_font.render(f"Stab{self.get_effective_stability()}", True, (0, 0, 0))
+        surface.blit(stab_text, (x + 10, y + height - stab_text.get_height() - 10))
+
         # Type
-        type_text = font.render(self.type.value, True, (0, 0, 0))
-        type_rect = type_text.get_rect(centerx=x + width//2, y=y + 25)
+        type_text = body_font.render(self.type.value, True, (0, 0, 0))
+        type_rect = type_text.get_rect(centerx=x + width//2, y=y + 60)
         surface.blit(type_text, type_rect)
-        
+
         # Effect (truncated if too long)
         if self.effect:
-            effect_lines = self.wrap_text(self.effect, font, width - 10)
-            for i, line in enumerate(effect_lines[:2]):  # Max 2 lines
-                effect_text = font.render(line, True, (0, 0, 0))
-                surface.blit(effect_text, (x + 5, y + 45 + i * 15))
+            effect_lines = self.wrap_text(self.effect, body_font, width - 20)
+            for i, line in enumerate(effect_lines[:3]):  # Max 3 lines
+                effect_text = body_font.render(line, True, (0, 0, 0))
+                surface.blit(effect_text, (x + 10, y + 100 + i * 20))
     
     def wrap_text(self, text, font, max_width):
         """Wrap text to fit within max_width"""
@@ -157,5 +168,5 @@ class Card:
     
     def copy(self):
         """Create a copy of this card"""
-        return Card(self.name, self.type, self.base_speed, self.base_damage, 
-                   self.base_stability, self.effect, self.read, self.clash)
+        return Card(self.name, self.type, self.base_speed, self.base_damage,
+                    self.base_stability, self.effect, self.read, self.clash)
